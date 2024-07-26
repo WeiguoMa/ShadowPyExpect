@@ -21,6 +21,13 @@ Install the necessary Python packages using `pip`:
 
 ```bash
 pip install numpy qutip
+
+Build the Cpp dependency before execute main.py.
+```bash
+mkdir build
+cd build
+cmake ..
+make
 ```
 
 ### Project Structure
