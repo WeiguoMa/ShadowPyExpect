@@ -1,6 +1,6 @@
 import numpy as np
 from qutip import ket2dm, basis, tensor
-from src.python.z2_model import Z2Model
+from src.python.z2_model import Z2Model, Z2
 
 def main():
     """

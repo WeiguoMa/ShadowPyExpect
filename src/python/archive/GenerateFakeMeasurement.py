@@ -8,11 +8,10 @@ from copy import deepcopy
 from typing import Optional, List, AnyStr, Union
 
 import numpy as np
+from FakeSampler import FakeSampler
 from quafu import QuantumCircuit, simulate
 from qutip import tensor, identity, Qobj, sigmax, sigmay, sigmaz, expect
 from tqdm import tqdm
-
-from FakeSampler import FakeSampler
 
 
 def circuit2densityMatrix() -> (QuantumCircuit, np.ndarray):
