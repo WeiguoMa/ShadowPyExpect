@@ -167,43 +167,23 @@ class Z2Model(AbstractModelProperties):
                  system_size: int,
                  whole_time: float,
                  time_step: int,
-                 observables_cs: Optional[Dict] = None,
-                 obs_write: bool = False,
+                 write_observables: bool = False,
                  obs_write_file_name: Optional[str] = None):
-        super().__init__(system_size=system_size,
-                         observables_cs=observables_cs,
-                         obs_write=obs_write,
-                         obs_write_file_name=obs_write_file_name)
+        super().__init__(system_size=system_size)
+
+        self.model = Z2(system_size=system_size, m=1.,
+                        write_observables=write_observables,
+                        obs_write_file_name=obs_write_file_name)
+
+        self.observables_cs = self.model.observables_cs
 
         self.time, self.steps = whole_time, time_step
         self.time_slice = np.linspace(0, self.time, self.steps)
 
         self.expectation_series_qutip = None
 
-    def create_model(self):
-        return Z2(self.q_number,
-                  m=1,
-                  write_observables=self.model_obs_write,
-                  obs_write_file_name=self.model_obs_write_file_name)
-
-    def get_density_matrix(self, init_state: Optional[Qobj] = None, system_hamiltonian: Optional[Qobj] = None) -> List[
-        Qobj]:
-        """
-        Get the density matrix of the system over time.
-
-        Args:
-            init_state (Optional[Qobj]): Initial state of the system.
-            system_hamiltonian (Optional[Qobj]): Hamiltonian of the system.
-
-        Returns:
-            List[Qobj]: List of density matrices over time.
-        """
-        opts = Options(store_states=True)
-
-        system_hamiltonian = self.model.main_ham if system_hamiltonian is None else system_hamiltonian
-        result = mesolve(system_hamiltonian, self.init_state, self.time_slice, options=opts)
-
-        return result.states
+    def calculate_z2_DMS(self):
+        self.dm_time_series = mesolve(self.model.main_ham, self.init_state, self.time_slice).states
 
     def calculate_expectation(self, init_state: Optional[Qobj] = None,
                               cs: bool = False,
@@ -211,9 +191,7 @@ class Z2Model(AbstractModelProperties):
                               time_slice: Optional[Iterable] = None,
                               observables: Optional[List[Qobj]] = None,
                               measure_times: Optional[int] = None,
-                              derandom_scheme: bool = True,
-                              measure_scheme_file_name: Optional[str] = None,
-                              measure_outcome_file_name: Optional[str] = None) -> Dict:
+                              derandom_scheme: bool = True) -> Dict:
         """
         Calculate the expectation values of observables.
 
@@ -225,41 +203,52 @@ class Z2Model(AbstractModelProperties):
             observables (Optional[List[Qobj]]): List of observables.
             measure_times (Optional[int]): Number of measurement times.
             derandom_scheme (bool): Flag to use derandomized scheme.
-            measure_scheme_file_name (Optional[str]): File name for the measurement scheme.
-            measure_outcome_file_name (Optional[str]): File name for the measurement outcomes.
 
         Returns:
             Dict[str, List[float]]: Dictionary of expectation values.
         """
-        if init_state is None:
-            raise NotImplementedError("Expectations for arbitrary quantum states are not supported yet.")
+        self.init_state = init_state
+
+        if not cs:
+            print('------- Calculating Expectations of Observables with Qutip -------')
+            if not isinstance(observables, list) and observables is not None:
+                raise TypeError(f'Type of observables must be List[Qobj], current type is {type(observables)}.')
+
+            observables = [] if observables is None else observables
+            _observables = (
+                    [self.model.main_ham, self.model.magnetization_ham]
+                    + [_ham for _ham in self.model.gauss_law_ham]
+                    + observables
+            )
+            system_hamiltonian = self.model.main_ham if system_hamiltonian is None else system_hamiltonian
+            time_slice = self.time_slice if time_slice is None else time_slice
+
+            self.expectation_series_qutip = self._calculate_expectation_qutip(
+                system_hamiltonian=system_hamiltonian, init_state=self.init_state,
+                time_slice=time_slice, observables=_observables
+            )
+            return self.expectation_series_qutip
         else:
-            if not cs:
-                print('------- Calculating Expectations of Observables with Qutip -------')
-                if not isinstance(observables, list) and observables is not None:
-                    raise TypeError(f'Type of observables must be List[Qobj], current type is {type(observables)}.')
+            if not isinstance(measure_times, int):
+                raise ValueError(f"MeasureTimes must be a finite integer, not {measure_times}.")
 
-                observables = [] if observables is None else observables
-                _observables = (
-                        [self.model.main_ham, self.model.magnetization_ham]
-                        + [_ham for _ham in self.model.gauss_law_ham]
-                        + observables
-                )
-                system_hamiltonian = self.model.main_ham if system_hamiltonian is None else system_hamiltonian
-                time_slice = self.time_slice if time_slice is None else time_slice
+            self.calculate_z2_DMS()     # Recalculate the density matrix series with Qutip.
 
-                self.expectation_series_qutip = self._calculate_expectation_qutip(
-                    system_hamiltonian=system_hamiltonian, init_state=init_state,
-                    time_slice=time_slice, observables=_observables
-                )
-                return self.expectation_series_qutip
-            else:
-                if not isinstance(measure_times, int):
-                    raise ValueError(f"MeasureTimes must be a finite integer, not {measure_times}.")
+            print('------- Calculating Expectations of Observables with Classical Shadow -------')
+            expectation_series_classical_shadow = self._calculate_expectation_classical_shadow(
+                density_matrix_series=self.dm_time_series,
+                measurement_times=measure_times,
+                derandom_scheme=derandom_scheme
+            )
+            return expectation_series_classical_shadow
 
-                print('------- Calculating Expectations of Observables with Classical Shadow -------')
-                expectation_series_classical_shadow = self._calculate_expectation_classical_shadow(
-                    measurement_times=measure_times,
-                    derandom_scheme=derandom_scheme
-                )
-                return expectation_series_classical_shadow
+    def _calculate_expectation_qutip(self,
+                                     system_hamiltonian: Qobj,
+                                     init_state: Qobj,
+                                     time_slice: Iterable,
+                                     observables: List[Qobj]):
+        opts = Options(store_states=True)
+        result = mesolve(system_hamiltonian, init_state, time_slice, e_ops=observables, options=opts)
+
+        self.dm_time_series = result.states
+        return result.expect
