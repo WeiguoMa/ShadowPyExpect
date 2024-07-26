@@ -2,7 +2,6 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 #include <Eigen/Dense>
-#include <unsupported/Eigen/KroneckerProduct>
 #include <cmath>
 #include <complex>
 #include <random>

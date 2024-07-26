@@ -1,7 +1,8 @@
+import os
 import sys
 from typing import Optional, List, Dict
 
-sys.path.append("../../build")
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../build')))
 
 from expectationCS import ClassicalShadow_backend
 from generateMeasureScheme import MeasureScheme_backend

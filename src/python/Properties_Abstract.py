@@ -5,8 +5,8 @@ from numpy import ndarray
 from qutip import Qobj, Options, mesolve
 from tqdm import tqdm
 
-from FakeSampler import FakeSampler
-from class_cpp2python import MeasureScheme, ClassicalShadow
+from .FakeSampler import FakeSampler
+from .class_cpp2python import MeasureScheme, ClassicalShadow
 
 
 class AbstractModelProperties(ABC):
@@ -75,7 +75,7 @@ class AbstractModelProperties(ABC):
                               measure_scheme_file_name: Optional[str] = None,
                               measure_outcome_file_name: Optional[str] = None):
         """
-        Calculates the expectation values using QuTiP or ClassicalShadow.
+        Calculates the expectation values using QuTiP or ShadowPyExpect.
 
         If init_state is None, the process density matrix should be offered for calculating expectations.
 

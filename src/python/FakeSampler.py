@@ -1,3 +1,4 @@
+import os
 import sys
 from itertools import product
 from typing import Union, List, Optional
@@ -5,7 +6,7 @@ from typing import Union, List, Optional
 import numpy as np
 from qutip import Qobj
 
-sys.path.append('../../build')
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../build')))
 
 
 class FakeSampler:
