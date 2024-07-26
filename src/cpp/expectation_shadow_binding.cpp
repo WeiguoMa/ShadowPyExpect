@@ -4,18 +4,16 @@
 //  https://github.com/hsinyuan-huang/predicting-quantum-properties
 //
 
-#include <stdio.h>
-#include <cmath>
-#include <vector>
-#include <sys/time.h>
-#include <string>
-#include <string.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <cassert>
+#include <vector>
 #include <utility>
 #include <algorithm>
+#include <stdexcept>
+#include <optional>
+#include <cmath>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/complex.h>
@@ -26,140 +24,131 @@ namespace py = pybind11;
 
 class ClassicalShadow_backend {
 private:
-    // systemSize
     int systemSize;
-
-    // Observables
-    vector<vector<pair<int, int>>> observables; // [[(obsPosition, obsEncoding), (...)]]
-    // \DownArrow outer[] -- systemSize; middle[] -- 3 (X, Y, Z); inner[] -- observableCounter;
+    vector<vector<pair<int, int>>> observables;
     vector<vector<vector<int>>> observable_on_iQubit;
-
-    // Measurement
     vector<vector<int>> measurementObservables;
     vector<vector<int>> measurementOutcomes;
-
-    // Subsystem
     vector<vector<int>> subSystems;
-
-    // Expectations of Observables
     vector<double> expectations;
-
-    // Entropy of subsystems
     vector<double> entropies;
-
-    //
-    double renyi_sum_of_binary_outcome[10000000];
-    double renyi_number_of_outcomes[10000000];
+    double renyi_sum_of_binary_outcome[10000000] = {0};
+    double renyi_number_of_outcomes[10000000] = {0};
 
     void loadObservables_cs(const py::dict& observables4CS);
-
     void loadMeasurementOutcome(const py::dict& measureOutcomes);
-
     void loadSubsystem(const string& fileName);
 
 public:
-    ClassicalShadow_backend(int systemSize,
-                    const optional<py::dict>& observables4CS) : systemSize(systemSize) {
-        if (observables4CS) {
-            loadObservables_cs(*observables4CS);
-        } else {
-            throw invalid_argument("Observables4CS must be provided.");
-        }
-    }
+    ClassicalShadow_backend(int systemSize, const optional<py::dict>& observables4CS);
 
     int observableNumber;
-
     vector<double> calculateExpectations(const optional<py::dict>& measureOutcomes);
-
-    vector<double> calculateEntropy(const optional<py::dict>& subsystems,
-                                    const optional<string>& subsystemFileName);
+    vector<double> calculateEntropy(const optional<py::dict>& subsystems, const optional<string>& subsystemFileName);
 };
 
-void ClassicalShadow_backend::loadObservables_cs(const py::dict& observables4CS) {
-    systemSize = py::cast<int>(observables4CS["system_size"]);
-    vector<int> _k_local = py::cast<vector<int>>(observables4CS["k_local"]);
-    vector<std::string> _observables = py::cast<vector<std::string>>(observables4CS["observables"]);
-    vector<vector<int>> _positions = py::cast<vector<vector<int>>>(observables4CS["positions"]);
-
-    observableNumber = 0;
-    observable_on_iQubit.assign(systemSize, vector<vector<int>>(3));
-
-    int observableCounter = 0;
-
-    for (size_t i = 0; i < _observables.size(); ++i) {
-        int k_local = _k_local[i];
-        std::string _obs = _observables[i];
-        vector<int> _pos = _positions[i];
-
-        vector<pair<int, int>> ith_observable;
-
-        for (int k = 0; k < k_local; ++k) {
-            assert(_obs[k] == 'X' || _obs[k] == 'Y' || _obs[k] == 'Z');
-            int _obs_encoding = _obs[k] - 'X';
-
-            observable_on_iQubit[_pos[k]][_obs_encoding].push_back(observableCounter);
-            ith_observable.emplace_back(_pos[k], _obs_encoding);
-        }
-        observables.push_back(ith_observable);
-        ++observableCounter;
+ClassicalShadow_backend::ClassicalShadow_backend(int systemSize, const optional<py::dict>& observables4CS) : systemSize(systemSize) {
+    if (observables4CS) {
+        loadObservables_cs(*observables4CS);
+    } else {
+        throw invalid_argument("Observables4CS must be provided.");
     }
-    observableNumber = observableCounter;
+}
+
+void ClassicalShadow_backend::loadObservables_cs(const py::dict& observables4CS) {
+    try {
+        systemSize = py::cast<int>(observables4CS["system_size"]);
+        vector<int> kLocal = py::cast<vector<int>>(observables4CS["k_local"]);
+        vector<string> observablesList = py::cast<vector<string>>(observables4CS["observables"]);
+        vector<vector<int>> positions = py::cast<vector<vector<int>>>(observables4CS["positions"]);
+
+        observableNumber = 0;
+        observable_on_iQubit.assign(systemSize, vector<vector<int>>(3));
+
+        int observableCounter = 0;
+
+        for (size_t i = 0; i < observablesList.size(); ++i) {
+            int kLocalValue = kLocal[i];
+            string observable = observablesList[i];
+            vector<int> position = positions[i];
+
+            vector<pair<int, int>> ithObservable;
+
+            for (int k = 0; k < kLocalValue; ++k) {
+                if (observable[k] != 'X' && observable[k] != 'Y' && observable[k] != 'Z') {
+                    throw invalid_argument("Invalid observable character. Must be X, Y, or Z.");
+                }
+                int obsEncoding = observable[k] - 'X';
+
+                observable_on_iQubit[position[k]][obsEncoding].push_back(observableCounter);
+                ithObservable.emplace_back(position[k], obsEncoding);
+            }
+            observables.push_back(ithObservable);
+            ++observableCounter;
+        }
+        observableNumber = observableCounter;
+    } catch (const exception& e) {
+        cerr << "Error loading observables: " << e.what() << endl;
+        throw;
+    }
 }
 
 void ClassicalShadow_backend::loadMeasurementOutcome(const py::dict& measureOutcomes) {
-    vector<vector<string>> _orientations = py::cast<vector<vector<string>>>(measureOutcomes["orientations"]);
-    vector<vector<int> >_outcomes = py::cast<vector<vector<int>>>(measureOutcomes["outcomes"]);
+    try {
+        vector<vector<string>> orientations = py::cast<vector<vector<string>>>(measureOutcomes["orientations"]);
+        vector<vector<int>> outcomes = py::cast<vector<vector<int>>>(measureOutcomes["outcomes"]);
 
-    for (size_t line = 0; line < _orientations.size(); ++line) {
-        vector<int> orientationList(systemSize);
-        vector<int> outcomeList(systemSize);
+        for (size_t line = 0; line < orientations.size(); ++line) {
+            vector<int> orientationList(systemSize);
+            vector<int> outcomeList(systemSize);
 
-        for (int ith_qubit = 0; ith_qubit < systemSize; ++ith_qubit) {
-            char obs[5];
-            int binaryOutcome;
+            for (int ithQubit = 0; ithQubit < systemSize; ++ithQubit) {
+                char orientationChar = orientations[line][ithQubit][0];
+                int binaryOutcome = outcomes[line][ithQubit];
 
-            obs[0] = _orientations[line][ith_qubit][0];
-            binaryOutcome = _outcomes[line][ith_qubit];
+                if (binaryOutcome != 1 && binaryOutcome != -1) {
+                    throw invalid_argument("Invalid measurement outcome. Must be 1 or -1.");
+                }
 
-            assert(binaryOutcome == 1 || binaryOutcome == -1);
-
-            orientationList[ith_qubit] = obs[0] - 'X';
-            outcomeList[ith_qubit] = binaryOutcome;
+                orientationList[ithQubit] = orientationChar - 'X';
+                outcomeList[ithQubit] = binaryOutcome;
+            }
+            measurementObservables.push_back(orientationList);
+            measurementOutcomes.push_back(outcomeList);
         }
-        measurementObservables.push_back(orientationList);
-        measurementOutcomes.push_back(outcomeList);
+    } catch (const exception& e) {
+        cerr << "Error loading measurement outcomes: " << e.what() << endl;
+        throw;
     }
 }
 
 void ClassicalShadow_backend::loadSubsystem(const string& fileName) {
     ifstream subSystemFile(fileName);
-    if (subSystemFile.fail()) {
-        cerr << "\n====\nError: the input file \"%s\" does not exist.\n====\n" << fileName << endl;
-        exit(-1);
+    if (!subSystemFile) {
+        throw runtime_error("Error: the input file \"" + fileName + "\" does not exist.");
     }
 
     int subsystemSize;
     subSystemFile >> subsystemSize;
     if (subsystemSize > systemSize) {
-        cerr << "\n====\nError: System size in Subsystem file is not equal to the system size.\n====\n" << endl;
-        exit(-1);
+        throw runtime_error("Error: System size in Subsystem file exceeds the system size.");
     }
 
     string line;
     while (getline(subSystemFile, line)) {
         if (line.empty()) continue;
-        istringstream singleLine_stream(line);
+        istringstream lineStream(line);
 
-        int k_local;
-        singleLine_stream >> k_local;
+        int kLocal;
+        lineStream >> kLocal;
 
-        vector<int> ith_subsystem;
-        for (int k = 0; k < k_local; ++k) {
+        vector<int> subsystem;
+        for (int k = 0; k < kLocal; ++k) {
             int qubitPosition;
-            singleLine_stream >> qubitPosition;
-            ith_subsystem.push_back(qubitPosition);
+            lineStream >> qubitPosition;
+            subsystem.push_back(qubitPosition);
         }
-        subSystems.push_back(ith_subsystem);
+        subSystems.push_back(subsystem);
     }
     subSystemFile.close();
 }
@@ -167,8 +156,8 @@ void ClassicalShadow_backend::loadSubsystem(const string& fileName) {
 vector<double> ClassicalShadow_backend::calculateExpectations(const optional<py::dict>& measureOutcomes) {
     vector<int> obsMatchCount(observableNumber);
     vector<int> cumulativeMeasurements(observableNumber);
-    vector<int> measurementNumber(observableNumber);
-    vector<int> measurementResultSum(observableNumber);
+    vector<int> measurementNumber(observableNumber, 0);
+    vector<int> measurementResultSum(observableNumber, 0);
 
     if (measureOutcomes) {
         loadMeasurementOutcome(*measureOutcomes);
@@ -176,23 +165,23 @@ vector<double> ClassicalShadow_backend::calculateExpectations(const optional<py:
         throw invalid_argument("MeasureOutcomes must be provided.");
     }
 
-    for (int measEpoch = 0;
-         measEpoch < (int) measurementObservables.size(); measEpoch++) { // number of measurement scheme
-        for (int i = 0; i < (int) observables.size(); i++) { // number of observables
-            obsMatchCount[i] = observables[i].size(); // k-local of observables[i]
+    for (size_t measEpoch = 0; measEpoch < measurementObservables.size(); ++measEpoch) {
+        for (size_t i = 0; i < observables.size(); ++i) {
+            obsMatchCount[i] = observables[i].size();
             cumulativeMeasurements[i] = 1;
         }
-        for (int ith_qubit = 0; ith_qubit < systemSize; ith_qubit++) {
-            int observable = measurementObservables[measEpoch][ith_qubit];
-            int outcome = measurementOutcomes[measEpoch][ith_qubit];
 
-            for (int i: observable_on_iQubit[ith_qubit][observable]) { // for element in 0-th qubit X/Y/Z -- [order of obs]
-                obsMatchCount[i]--; // k-local number
-                cumulativeMeasurements[i] *= outcome; // e.g., [-1, 1] for 2-local observable
+        for (int ithQubit = 0; ithQubit < systemSize; ++ithQubit) {
+            int observable = measurementObservables[measEpoch][ithQubit];
+            int outcome = measurementOutcomes[measEpoch][ithQubit];
+
+            for (int obsIdx : observable_on_iQubit[ithQubit][observable]) {
+                obsMatchCount[obsIdx]--;
+                cumulativeMeasurements[obsIdx] *= outcome;
             }
         }
 
-        for (int i = 0; i < (int) observables.size(); i++) { // number of observables
+        for (size_t i = 0; i < observables.size(); ++i) {
             if (obsMatchCount[i] == 0) {
                 measurementNumber[i]++;
                 measurementResultSum[i] += cumulativeMeasurements[i];
@@ -200,15 +189,18 @@ vector<double> ClassicalShadow_backend::calculateExpectations(const optional<py:
         }
     }
 
-    for (int i = 0; i < (int) observables.size(); i++) {
+    expectations.clear();
+    expectations.reserve(observables.size());
+    for (size_t i = 0; i < observables.size(); ++i) {
         if (measurementNumber[i] == 0) {
-            expectations.push_back(0);
+            expectations.push_back(0.0);
         } else {
-            expectations.push_back((double) measurementResultSum[i] / measurementNumber[i]);
+            expectations.push_back(static_cast<double>(measurementResultSum[i]) / measurementNumber[i]);
         }
     }
     return expectations;
 }
+
 
 vector<double> ClassicalShadow_backend::calculateEntropy(const optional<py::dict>& subsystems,
                                                          const optional<string>& subsystemFileName) {
