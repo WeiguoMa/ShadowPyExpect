@@ -1,7 +1,7 @@
 import numpy as np
 from qutip import ket2dm, basis, tensor
 
-from src.python.Z2Model import Z2Model
+from src.python.z2_model import Z2Model
 
 init_dm = ket2dm(
     tensor(

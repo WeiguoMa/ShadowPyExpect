@@ -5,8 +5,8 @@ from numpy import ndarray
 from qutip import Qobj, Options, mesolve
 from tqdm import tqdm
 
-from .FakeSampler import FakeSampler
-from .class_cpp2python import MeasureScheme, ClassicalShadow
+from .fake_sampler import FakeSampler
+from .cpp_to_python_interface import MeasureScheme, ClassicalShadow
 
 
 class AbstractModelProperties(ABC):

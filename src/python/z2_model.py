@@ -4,8 +4,8 @@ import numpy as np
 from qutip import mesolve, Options
 from qutip import tensor, Qobj, sigmax, sigmay, sigmaz, qeye
 
-from .Properties_Abstract import AbstractModelProperties
-from .generate_observables import generate_observables
+from .abstract_properties import AbstractModelProperties
+from .observables_generator import generate_observables
 
 __all__ = [
     'Z2Model'
