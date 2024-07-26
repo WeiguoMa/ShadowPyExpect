@@ -248,7 +248,7 @@ vector<vector<char>> MeasureScheme_backend::deRandomGenerate(int measurementTime
         for (int i = 0; i < observableNumber; ++i)
             if (cur_num_of_measurements[i] >= floor(observables_weight[i] * measurementTimes_perObservable))
                 success++;
-        cerr << "[Status " << measurement_repetition + 1 << ": " << success << "]" << endl;
+//        cerr << "[Status " << measurement_repetition + 1 << ": " << success << "]" << endl;
 
         if (success == observableNumber)
             break;
