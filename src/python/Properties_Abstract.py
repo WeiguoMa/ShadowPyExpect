@@ -106,29 +106,22 @@ class AbstractModelProperties(ABC):
 
     def _generate_measure_scheme(self,
                                  measurement_times: int,
-                                 obs_file_name: Optional[str] = None,
-                                 derandom_scheme: bool = True,
-                                 measure_scheme_file_name: Optional[str] = None) -> List[List[str]]:
+                                 derandom_scheme: bool = True) -> List[List[str]]:
         if derandom_scheme:
             measure_scheme: List = self.measure_scheme_generator.derandom_generate(
                 measurement_times_per_observable=measurement_times,
                 observables_cs=self.observables_cs,
-                observables_file_name=obs_file_name,
-                output_file_name=measure_scheme_file_name
             )
         else:
             measure_scheme: List = self.measure_scheme_generator.random_generate(
                 total_measurement_times=measurement_times,
-                output_file_name=measure_scheme_file_name
             )
 
         self.measure_scheme = measure_scheme
         return measure_scheme
 
     def _get_measurement_outcomes(self,
-                                  measure_scheme: Optional[List] = None,
-                                  measure_scheme_file_name: Optional[str] = None,
-                                  measure_outcome_file_name: Optional[str] = None) -> Dict[str, Dict[str, List]]:
+                                  measure_scheme: Optional[List] = None) -> Dict[str, Dict[str, List]]:
         if measure_scheme is None:
             raise ValueError("The measurement scheme must be provided.")
         return {
@@ -143,25 +136,19 @@ class AbstractModelProperties(ABC):
 
     def _calculate_expectation_classical_shadow(self,
                                                 measurement_times: int,
-                                                derandom_scheme: bool = True,
-                                                measure_scheme_file_name: Optional[str] = None,
-                                                measure_outcome_file_name: Optional[str] = None):
+                                                derandom_scheme: bool = True):
         """
         Args:
             measurement_times (int): The number of measurement times.
-            measure_scheme_file_name (Optional[str]): File name for the measure scheme.
-            measure_outcome_file_name (Optional[str]): File name for the measure outcome.
         """
         measure_scheme = self._generate_measure_scheme(measurement_times=measurement_times,
-                                                       derandom_scheme=derandom_scheme,
-                                                       measure_scheme_file_name=measure_scheme_file_name)
+                                                       derandom_scheme=derandom_scheme)
 
         # Get the target unknown quantum state (Qutip/QuantumCircuit simulation/Unknown Capture)
         if self.dm_time_series is None:
             self.dm_time_series = self.get_density_matrix(self.init_state)
 
-        self.measure_outcomes = self._get_measurement_outcomes(measure_scheme=measure_scheme,
-                                                               measure_outcome_file_name=measure_outcome_file_name)
+        self.measure_outcomes = self._get_measurement_outcomes(measure_scheme=measure_scheme)
         expectation_series_classical_shadow = {
             f'DM_{i}': {  # {'XXX-[0, 1, 2]': _value, 'XXX-[2, 3, 0]': _value, ...}
                 f'{obs}-{pos}': value

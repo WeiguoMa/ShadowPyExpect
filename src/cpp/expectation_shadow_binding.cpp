@@ -43,7 +43,7 @@ public:
     ClassicalShadow_backend(int systemSize, const optional<py::dict>& observables4CS);
 
     int observableNumber;
-    vector<double> calculateExpectations(const optional<py::dict>& measureOutcomes);
+    vector<double> calculateExpectations(const py::dict& measureOutcomes);
     vector<double> calculateEntropy(const optional<py::dict>& subsystems, const optional<string>& subsystemFileName);
 };
 
@@ -153,17 +153,13 @@ void ClassicalShadow_backend::loadSubsystem(const string& fileName) {
     subSystemFile.close();
 }
 
-vector<double> ClassicalShadow_backend::calculateExpectations(const optional<py::dict>& measureOutcomes) {
+vector<double> ClassicalShadow_backend::calculateExpectations(const py::dict& measureOutcomes) {
     vector<int> obsMatchCount(observableNumber);
     vector<int> cumulativeMeasurements(observableNumber);
     vector<int> measurementNumber(observableNumber, 0);
     vector<int> measurementResultSum(observableNumber, 0);
 
-    if (measureOutcomes) {
-        loadMeasurementOutcome(*measureOutcomes);
-    } else {
-        throw invalid_argument("MeasureOutcomes must be provided.");
-    }
+    loadMeasurementOutcome(measureOutcomes);
 
     for (size_t measEpoch = 0; measEpoch < measurementObservables.size(); ++measEpoch) {
         for (size_t i = 0; i < observables.size(); ++i) {
@@ -268,7 +264,7 @@ PYBIND11_MODULE(expectationCS, m) {
                     py::arg("system_size"),
                     py::arg("observables_cs") = py::none())
             .def("calculateExpectations", &ClassicalShadow_backend::calculateExpectations,
-                 py::arg("measureOutcomes") = py::none())
+                 py::arg("measureOutcomes"))
             .def("calculateEntropy", &ClassicalShadow_backend::calculateEntropy,
                     py::arg("subsystems") = py::none(),
                     py::arg("subsystemFileName") = py::none())

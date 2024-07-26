@@ -260,8 +260,6 @@ class Z2Model(AbstractModelProperties):
                 print('------- Calculating Expectations of Observables with Classical Shadow -------')
                 expectation_series_classical_shadow = self._calculate_expectation_classical_shadow(
                     measurement_times=measure_times,
-                    derandom_scheme=derandom_scheme,
-                    measure_scheme_file_name=measure_scheme_file_name,
-                    measure_outcome_file_name=measure_outcome_file_name
+                    derandom_scheme=derandom_scheme
                 )
                 return expectation_series_classical_shadow

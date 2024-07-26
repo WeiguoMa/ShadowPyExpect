@@ -41,8 +41,7 @@ private:
 
     vector<double> log1ppow1o3k;
 
-    void loadObservables(const string& fileName);
-    void loadObservablesData(const py::dict& observables4CS);
+    void loadObservables(const py::dict& observables_cs);
 
     double fail_probPessimistic(int measurementTimes_perObservable, int curMeasurementTimes, int obsMatchCount,
                                 double weight, double shift);
@@ -59,25 +58,22 @@ public:
 
     vector<vector<pair<int, int>>> observables;
 
-    vector<vector<char>> randomGenerate(int totalMeasurementTimes,
-                                        optional<string> outputFileName = nullopt);
+    vector<vector<char>> randomGenerate(int totalMeasurementTimes);
 
     vector<vector<char>> deRandomGenerate(int measurementTimes_perObservable,
-                                          const optional<py::dict>& observables4CS,
-                                          const optional<string>& observablesFileName,
-                                          const optional<string>& outputFileName);
+                                          const py::dict& observables_cs);
 };
 
-void MeasureScheme_backend::loadObservablesData(const py::dict& observables4CS) {
+void MeasureScheme_backend::loadObservables(const py::dict& observables_cs) {
     try {
-        systemSize = py::cast<int>(observables4CS["system_size"]);
-        vector<int> _k_local = py::cast<vector<int>>(observables4CS["k_local"]);
-        vector<std::string> _observables = py::cast<vector<std::string>>(observables4CS["observables"]);
-        vector<vector<int>> _positions = py::cast<vector<vector<int>>>(observables4CS["positions"]);
+        systemSize = py::cast<int>(observables_cs["system_size"]);
+        vector<int> _k_local = py::cast<vector<int>>(observables_cs["k_local"]);
+        vector<std::string> _observables = py::cast<vector<std::string>>(observables_cs["observables"]);
+        vector<vector<int>> _positions = py::cast<vector<vector<int>>>(observables_cs["positions"]);
 
         vector<double> _weights(_observables.size(), 1.0);
-        if (observables4CS.contains("weights")) {
-            _weights = py::cast<vector<double>>(observables4CS["weights"]);
+        if (observables_cs.contains("weights")) {
+            _weights = py::cast<vector<double>>(observables_cs["weights"]);
             if (_weights.size() != _observables.size()) {
                 throw std::runtime_error("Size of weights does not match size of observables.");
             }
@@ -124,69 +120,8 @@ void MeasureScheme_backend::loadObservablesData(const py::dict& observables4CS) 
     } catch (const py::cast_error& e) {
         throw std::runtime_error("Type casting error: " + std::string(e.what()));
     } catch (const std::exception& e) {
-        throw std::runtime_error("Error in loadObservablesData: " + std::string(e.what()));
+        throw std::runtime_error("Error in loadObservables: " + std::string(e.what()));
     }
-}
-
-
-void MeasureScheme_backend::loadObservables(const string &fileName) {
-    ifstream observableFile(fileName);
-    if (!observableFile) {
-        cerr << "Error: The input file \"" << fileName << "\" does not exist." << endl;
-        exit(EXIT_FAILURE);
-    }
-
-    cerr << "File Opened Successfully: \"" << fileName << "\"" << endl;
-    observableFile >> systemSize;
-
-    max_k_local = 0;
-    observableNumber = 0;
-    observables_on_iQubit.clear();
-
-    vector<int> positions;
-    vector<vector<int>> obsList(3, positions);
-
-    for (int i = 0; i < systemSize; ++i) {
-        observables_on_iQubit.push_back(obsList);
-    }
-
-    string line;
-    int observableCounter = 0;
-
-    while (getline(observableFile, line)) {
-        if (line.empty()) continue;
-        istringstream singleLine_stream(line);
-
-        int k_local;
-        singleLine_stream >> k_local;
-        max_k_local = max(max_k_local, k_local);
-
-        vector<pair<int, int>> ith_observable;
-        for (int k = 0; k < k_local; ++k) {
-            string pauliObservable;
-            int pauliPosition;
-
-            singleLine_stream >> pauliObservable >> pauliPosition;
-
-            assert(pauliObservable[0] == 'X' || pauliObservable[0] == 'Y' || pauliObservable[0] == 'Z');
-            int pauliCoding = pauliObservable[0] - 'X'; // ASCII Coding
-
-            observables_on_iQubit[pauliPosition][pauliCoding].push_back(observableCounter);
-            ith_observable.emplace_back(pauliPosition, pauliCoding);
-        }
-
-        double weight = 1.0;
-        if (singleLine_stream.rdbuf()->in_avail() != 0) {
-            singleLine_stream >> weight;
-        }
-
-        observables_weight.push_back(weight);
-        observables.push_back(ith_observable);
-
-        ++observableCounter;
-    }
-    observableNumber = observableCounter;
-    observableFile.close();
 }
 
 double MeasureScheme_backend::fail_probPessimistic(int measurementTimes_perObservable,
@@ -207,54 +142,27 @@ double MeasureScheme_backend::fail_probPessimistic(int measurementTimes_perObser
     return 2 * exp((log_value / weight) - shift);
 }
 
-vector<vector<char>> MeasureScheme_backend::randomGenerate(int totalMeasurementTimes,
-                                                           optional<string> outputFileName) {
+vector<vector<char>> MeasureScheme_backend::randomGenerate(int totalMeasurementTimes) {
     random_device rd;
     mt19937 gen(rd());
     uniform_int_distribution<> dis(0, 2);
 
     const char Obs[] = {'X', 'Y', 'Z'};
 
-    ostream *out = &cout;
-    ofstream outFile;
-
-    if (outputFileName) {
-        outFile.open(*outputFileName);
-        if (!outFile.is_open()) {
-            cerr << "Error: Could not open file " << *outputFileName << " for writing." << endl;
-            return {};
-        }
-        out = &outFile;
-    }
-
     for (int i = 0; i < totalMeasurementTimes; ++i) {
         vector<char> ith_measurement;
         for (int j = 0; j < systemSize; ++j) {
             char obs = Obs[dis(gen)];
             ith_measurement.push_back(obs);
-            *out << obs << " ";
         }
         randomScheme.push_back(ith_measurement);
-        *out << endl;
-    }
-
-    if (outFile.is_open()) {
-        outFile.close();
     }
     return randomScheme;
 }
 
 vector<vector<char>> MeasureScheme_backend::deRandomGenerate(int measurementTimes_perObservable,
-                                                             const optional<py::dict>& observables4CS,
-                                                             const optional<string>& observablesFileName,
-                                                             const optional<string>& outputFileName) {
-    if (observables4CS) {
-        loadObservablesData(*observables4CS);
-    } else if (observablesFileName) {
-        loadObservables(*observablesFileName);
-    } else {
-        throw invalid_argument("Either observablesFileName or pythonObservables must be provided.");
-    }
+                                                             const py::dict& observables_cs) {
+    loadObservables(observables_cs);
 
     double expm1eta = expm1(-eta / 2);
 
@@ -345,21 +253,6 @@ vector<vector<char>> MeasureScheme_backend::deRandomGenerate(int measurementTime
         if (success == observableNumber)
             break;
     }
-
-    if (outputFileName) {
-        ofstream outFile(*outputFileName);
-        if (outFile.is_open()) {
-            for (const auto &measurement: deRandomScheme) {
-                for (char c: measurement) {
-                    outFile << c << " ";
-                }
-                outFile << endl;
-            }
-            outFile.close();
-        } else {
-            cerr << "Error: Could not open file " << *outputFileName << " for writing." << endl;
-        }
-    }
     return deRandomScheme;
 }
 
@@ -368,10 +261,7 @@ PYBIND11_MODULE(generateMeasureScheme, m) {
             .def(py::init<>())
             .def_readonly("eta", &MeasureScheme_backend::eta)
             .def_readonly("max_k_local", &MeasureScheme_backend::max_k_local)
-            .def("randomGenerate", &MeasureScheme_backend::randomGenerate, py::arg("totalMeasurementTimes"),
-                 py::arg("outputFileName") = py::none())
+            .def("randomGenerate", &MeasureScheme_backend::randomGenerate, py::arg("totalMeasurementTimes"))
             .def("deRandomGenerate", &MeasureScheme_backend::deRandomGenerate,
-                 py::arg("measurementTimes_perObservable"),
-                 py::arg("observables4CS") = py::none(),
-                 py::arg("observablesFileName") = py::none(), py::arg("outputFileName") = py::none());
+                 py::arg("measurementTimes_perObservable"), py::arg("observables_cs"));
 }

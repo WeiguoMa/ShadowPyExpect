@@ -14,7 +14,7 @@ init_dm = ket2dm(
     )
 )
 
-z2Properties = Z2Model(system_size=4, whole_time=500, time_step=300)
+z2Properties = Z2Model(system_size=4, whole_time=200, time_step=50)
 
 expectation_qutip = z2Properties.calculate_expectation(init_state=init_dm)
 

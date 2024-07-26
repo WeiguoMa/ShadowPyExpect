@@ -21,13 +21,10 @@ class ClassicalShadow:
             observables_cs (Optional[Dict]): Observables for Classical Shadow.
             obs_file_name (Optional[str]): The file name of the observables.
         """
-        self._classical_shadow = ClassicalShadow_backend(systemSize=system_size,
-                                                         observables4CS=observables_cs,
-                                                         obsFileName=obs_file_name)
+        self._classical_shadow = ClassicalShadow_backend(system_size=system_size,
+                                                         observables_cs=observables_cs)
 
-    def calculate_expectation(self,
-                              measure_outcomes: Optional[Dict] = None,
-                              measure_outcome_file_name: Optional[str] = None) -> List[float]:
+    def calculate_expectation(self, measure_outcomes: Optional[Dict] = None) -> List[float]:
         """
         Calculate the expectation values using the measurement outcome file.
 
@@ -43,9 +40,6 @@ class ClassicalShadow:
         """
         if measure_outcomes is not None:
             expectations = self._classical_shadow.calculateExpectations(measureOutcomes=measure_outcomes)
-        elif measure_outcome_file_name is not None:
-            expectations = self._classical_shadow.calculateExpectations(
-                measureOutcomeFileName=measure_outcome_file_name)
         else:
             raise ValueError('You must supply a series of measurement outcomes for calculating the expectations.')
 
@@ -93,17 +87,13 @@ class MeasureScheme:
         return self.random_scheme
 
     def derandom_generate(self, measurement_times_per_observable: int,
-                          observables_cs: Optional[Dict] = None,
-                          observables_file_name: Optional[str] = None,
-                          output_file_name: Optional[str] = None) -> List[str]:
+                          observables_cs: Optional[Dict] = None) -> List[str]:
         """
         Generate a de-randomized measurement scheme.
 
         Args:
             measurement_times_per_observable (int): Number of measurement times per observable.
             observables_cs (Optional[Dict]): Observables for Classical Shadow.
-            observables_file_name (Optional[str]): File name of the observables.
-            output_file_name (Optional[str]): File name for the output scheme.
 
         Returns:
             List[str]: The generated de-randomized measurement scheme.
@@ -111,17 +101,10 @@ class MeasureScheme:
         Raises:
             ValueError: If neither observables_cs nor observables_file_name is provided.
         """
-        if observables_file_name is None and observables_cs is not None:
+        if observables_cs is not None:
             self.derandom_scheme = self._measure_scheme.deRandomGenerate(
                 measurementTimes_perObservable=measurement_times_per_observable,
-                observables4CS=observables_cs,
-                outputFileName=output_file_name
-            )
-        elif observables_file_name is not None and observables_cs is None:
-            self.derandom_scheme = self._measure_scheme.deRandomGenerate(
-                measurementTimes_perObservable=measurement_times_per_observable,
-                observablesFileName=observables_file_name,
-                outputFileName=output_file_name
+                observables_cs=observables_cs
             )
         else:
             raise ValueError('You must supply a series of observables for the de-random scheme.')
