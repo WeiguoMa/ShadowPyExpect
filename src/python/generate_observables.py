@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple
 def generate_observables(system_size: int,
                          repeat_item: List[str],
                          repeat_period: List[List[int]],
-                         write: bool = True,
+                         write: bool = False,
                          write_file_name: Optional[str] = None,
                          write_mode: str = 'w') -> Tuple[List[str], List[List[int]]]:
     """
