@@ -1,0 +1,5 @@
+python ../Python/GenerateFakeMeasurement.py -e ../TestFiles/obsTest.txt ../TestFiles/expectationTest.txt
+python ../Python/GenerateFakeMeasurement.py -mc ../TestFiles/schemeTest.txt ../TestFiles/measureTestCIRC.txt
+./expectationShadow -o ../TestFiles/measureTestCIRC.txt ../TestFiles/obsTest.txt
+python ../Python/GenerateFakeMeasurement.py -md ../TestFiles/schemeTest.txt ../TestFiles/measureTestDM.txt
+./expectationShadow -o ../TestFiles/measureTestDM.txt ../TestFiles/obsTest.txt

@@ -1,0 +1,204 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Pyre type checker
+.pyre/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+build/
+cmake-build-debug/
+
+# VS Code settings
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Logs
+*.log
+
+# Documentation
+docs/_build/
+
+# Sphinx documentation
+docs/_build/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Test coverage
+.coverage
+.tox/
+.nox/
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# pyenv
+.python-version
+
+# Other
+*.bak
+*~
+
+# Ignore example and test files
+examples/
+tests/
+
+# Ignore external dependencies
+external_dependencies/
+
+# IDEs and Editors
+# DataSpell, PyCharm, CLion
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Rider
+.idea/
+*.sln
+*.csproj
+*.pidb
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# DataSpell
+dataspell_workspace.xml
+
+# PyCharm specific
+.idea/
+# Comment the next line if you have project level libraries
+#  at .idea/libraries
+.idea/libraries/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+.idea/.name
+.idea/modules.xml
+.idea/.rider
+.idea/.vscode
+.idea/runConfigurations
+
+# CLion specific
+cmake-build-*/
+
+# JetBrains IDEs
+# User-specific stuff:
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/vcs.xml
+.idea/modules.xml
+.idea/assetWizardSettings.xml
+.idea/runConfigurations.xml
+.idea/gradle.xml
+.idea/libraries
+.idea/.rider
+
+# Sensitive or high-churn files:
+.idea/dataSources/
+.idea/dataSources.ids
+.idea/dataSources.local.xml
+.idea/sqlDataSources.xml
+.idea/dynamic.xml
+.idea/targetFolderSources.xml
+.idea/uiDesigner.xml
+.idea/assetWizardSettings.xml
+.idea/encodings.xml
+
+# Gradle:
+.idea/gradle.xml
+.idea/libraries
+
+# File-based project format:
+*.iws
+
+# IntelliJ
+*.iml
+*.ipr
+
+# Misc:
+.idea/*.xml
+.idea/*.iml
+.idea/modules.xml
+.idea/.name
+
+# Sonarlint plugin
+.idea/sonarlint/
+
+# CodeStream plugin
+.idea/codestream.xml
+
+# JetBrains GoLand
+.idea/dataSources.xml
+.idea/dataSources.ids
+.idea/sqlDataSources.xml
+
+# DataSpell
+.idea/dataspell/
