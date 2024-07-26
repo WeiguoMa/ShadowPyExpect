@@ -1,6 +1,6 @@
 # ShadowPyExpect
 Most of the program's comments are generated with the help of AI. The source work comes from MOMOHuang.
-```markdown
+
 # Z2 Model Expectation Calculation
 
 This repository demonstrates the use of the Z2 Model for calculating quantum expectations. The project includes Python scripts, C++ backend integration, and example files for testing and demonstration.
@@ -21,7 +21,7 @@ Install the necessary Python packages using `pip`:
 
 ```bash
 pip install numpy qutip
-
+```
 Build the Cpp dependency before execute main.py.
 ```bash
 mkdir build
@@ -47,7 +47,6 @@ make
 │       ├── abstract_properties.py  # Abstract properties module
 │       ├── cpp_to_python_interface.py  # C++ to Python interface
 │       ├── fake_sampler.py         # Fake sampler module
-│       ├── generate_fake_measurement.py # Generate fake measurement module
 │       ├── observables_generator.py # Observables generator module
 │       ├── z2_model.py             # Z2 model implementation
 ├── main.py                         # Main script for running the demonstration
