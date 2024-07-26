@@ -1,5 +1,5 @@
 # ShadowPyExpect
-
+Most of the program's comments are generated with the help of AI. The source work comes from MOMOHuang.
 ```markdown
 # Z2 Model Expectation Calculation
 
