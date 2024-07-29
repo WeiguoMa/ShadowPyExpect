@@ -47,8 +47,8 @@ private:
                                 double weight, double shift);
 
 public:
-    MeasureScheme_backend() : eta(0.9),
-                              systemSize(0),
+    MeasureScheme_backend(int systemSize) : eta(0.9),
+                              systemSize(systemSize),
                               observableNumber(0),
                               max_k_local(0),
                               sum_cnt(0),
@@ -147,7 +147,7 @@ vector<vector<char>> MeasureScheme_backend::randomGenerate(int totalMeasurementT
     mt19937 gen(rd());
     uniform_int_distribution<> dis(0, 2);
 
-    const char Obs[] = {'X', 'Y', 'Z'};
+    const char Obs[3] = {'X', 'Y', 'Z'};
 
     for (int i = 0; i < totalMeasurementTimes; ++i) {
         vector<char> ith_measurement;
@@ -170,7 +170,7 @@ vector<vector<char>> MeasureScheme_backend::deRandomGenerate(int measurementTime
         log1ppow1o3k.push_back(log1p(pow(1.0 / 3.0, k) * expm1eta));
     }
 
-    vector<int> cur_num_of_measurements(observableNumber, 0);
+    vector<int> current_num_of_measurements(observableNumber, 0);
     vector<int> obsMatchCount(observableNumber);
 
     for (int measurement_repetition = 0;
@@ -196,21 +196,21 @@ vector<vector<char>> MeasureScheme_backend::deRandomGenerate(int measurementTime
                                                            ? INF :
                                                            obsMatchCount[i] - 1;
                             double prob_next_step = fail_probPessimistic(measurementTimes_perObservable,
-                                                                         cur_num_of_measurements[i],
+                                                                         current_num_of_measurements[i],
                                                                          pauli_to_match_next_step,
                                                                          observables_weight[i], shift);
                             double prob_current_step = fail_probPessimistic(measurementTimes_perObservable,
-                                                                            cur_num_of_measurements[i],
+                                                                            current_num_of_measurements[i],
                                                                             obsMatchCount[i],
                                                                             observables_weight[i], shift);
                             prob_of_failure[obs] += prob_next_step - prob_current_step;
                         } else {
                             double prob_next_step = fail_probPessimistic(measurementTimes_perObservable,
-                                                                         cur_num_of_measurements[i],
+                                                                         current_num_of_measurements[i],
                                                                          numeric_limits<int>::max(),
                                                                          observables_weight[i], shift);
                             double prob_current_step = fail_probPessimistic(measurementTimes_perObservable,
-                                                                            cur_num_of_measurements[i],
+                                                                            current_num_of_measurements[i],
                                                                             obsMatchCount[i],
                                                                             observables_weight[i], shift);
                             prob_of_failure[obs] += prob_next_step - prob_current_step;
@@ -242,11 +242,11 @@ vector<vector<char>> MeasureScheme_backend::deRandomGenerate(int measurementTime
 
         for (int i = 0; i < observableNumber; ++i)
             if (obsMatchCount[i] == 0)
-                cur_num_of_measurements[i]++;
+                current_num_of_measurements[i]++;
 
         int success = 0;
         for (int i = 0; i < observableNumber; ++i)
-            if (cur_num_of_measurements[i] >= floor(observables_weight[i] * measurementTimes_perObservable))
+            if (current_num_of_measurements[i] >= floor(observables_weight[i] * measurementTimes_perObservable))
                 success++;
 //        cerr << "[Status " << measurement_repetition + 1 << ": " << success << "]" << endl;
 
@@ -258,7 +258,7 @@ vector<vector<char>> MeasureScheme_backend::deRandomGenerate(int measurementTime
 
 PYBIND11_MODULE(generateMeasureScheme, m) {
     py::class_<MeasureScheme_backend>(m, "MeasureScheme_backend")
-            .def(py::init<>())
+            .def(py::init<int>(), py::arg("systemSize"))
             .def_readonly("eta", &MeasureScheme_backend::eta)
             .def_readonly("max_k_local", &MeasureScheme_backend::max_k_local)
             .def("randomGenerate", &MeasureScheme_backend::randomGenerate, py::arg("totalMeasurementTimes"))

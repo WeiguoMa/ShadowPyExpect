@@ -60,11 +60,11 @@ class ClassicalShadow:
 
 
 class MeasureScheme:
-    def __init__(self):
+    def __init__(self, system_size: int):
         """
         Python interface for the measurement scheme cpp-backend.
         """
-        self._measure_scheme = MeasureScheme_backend()
+        self._measure_scheme = MeasureScheme_backend(systemSize=system_size)
         self.eta = self._measure_scheme.eta
 
         self.random_scheme, self.derandom_scheme = None, None
@@ -81,8 +81,7 @@ class MeasureScheme:
             List[str]: The generated measurement scheme.
         """
         self.random_scheme = self._measure_scheme.randomGenerate(
-            totalMeasurementTimes=total_measurement_times,
-            outputFileName=output_file_name
+            totalMeasurementTimes=total_measurement_times
         )
         return self.random_scheme
 

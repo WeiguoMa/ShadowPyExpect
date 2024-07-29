@@ -28,7 +28,7 @@ class AbstractModelProperties(ABC):
         self.observables_cs = observables_cs if observables_cs is not None else None
 
         # tools
-        self.measure_scheme_generator = MeasureScheme()
+        self.measure_scheme_generator = MeasureScheme(system_size=system_size)
         self.fake_sampler = FakeSampler(system_size=system_size)
 
         self.measure_scheme, self.measure_outcomes = None, None
@@ -95,7 +95,7 @@ class AbstractModelProperties(ABC):
             )
         else:
             measure_scheme: List = self.measure_scheme_generator.random_generate(
-                total_measurement_times=measurement_times,
+                total_measurement_times=measurement_times
             )
 
         return measure_scheme
